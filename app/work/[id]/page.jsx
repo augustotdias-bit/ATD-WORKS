@@ -20,16 +20,27 @@ export default function WorkPage(){
   },[id]);
 
   async function download(){
-    if(work?.imageUrl){
-      const a=document.createElement('a');a.href=work.imageUrl;a.target='_blank';a.rel='noopener';a.download=work.originalName||`${work.title}.jpg`;document.body.appendChild(a);a.click();a.remove();return;
-    }
+    if(work?.imageUrl){const a=document.createElement('a');a.href=work.imageUrl;a.target='_blank';a.rel='noopener';a.download=work.originalName||`${work.title}.jpg`;document.body.appendChild(a);a.click();a.remove();return}
     if(!work?.image)return;
-    const url=URL.createObjectURL(work.image);
-    const a=document.createElement('a');a.href=url;a.download=work.originalName||`${work.title}.jpg`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    const url=URL.createObjectURL(work.image);const a=document.createElement('a');a.href=url;a.download=work.originalName||`${work.title}.jpg`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
 
   if(loading)return <main className="site"><header className="header"><a className="brand" href="/">ATD WORKS</a></header><div className="empty">Opening work…</div></main>;
   if(!work)return <main className="site"><header className="header"><a className="brand" href="/">ATD WORKS</a></header><div className="empty"><p>This work could not be found.</p><a className="text-link" href="/">Return to archive →</a></div></main>;
 
-  return <main className="site"><header className="header"><a className="brand" href="/">ATD WORKS</a><nav className="nav"><a href="/">Archive</a><a href="/admin">Manage</a></nav></header><article className="work-detail"><div className="work-visual">{imageUrl?<img src={imageUrl} alt={work.title}/>:<span>No image</span>}</div><div className="work-info"><p className="eyebrow">Artwork record</p><h1>{work.title}</h1><dl><div><dt>Medium</dt><dd>{work.medium}</dd></div><div><dt>Dimensions</dt><dd>{work.dimensions}</dd></div><div><dt>Date</dt><dd>{work.date}</dd></div><div><dt>Availability</dt><dd>{work.availability}</dd></div></dl><button className="primary-button" onClick={download}>Download image</button></div></article></main>
+  return <main className="site">
+    <header className="header"><a className="brand" href="/">ATD WORKS</a><nav className="nav"><a href="/">Archive</a><a href="/admin">Manage</a></nav></header>
+    <article className="work-detail">
+      <div className="work-media">
+        <div className="work-visual">{imageUrl?<img src={imageUrl} alt={work.title}/>:<span>No image</span>}</div>
+        <p className="work-contact">For buying my works or commissions contact me by <a href="mailto:info@augustotavaresdias.com">info@augustotavaresdias.com</a>.</p>
+      </div>
+      <div className="work-info">
+        <p className="eyebrow">Artwork record</p>
+        <h1>{work.title}</h1>
+        <dl><div><dt>Medium</dt><dd>{work.medium}</dd></div><div><dt>Dimensions</dt><dd>{work.dimensions}</dd></div><div><dt>Date</dt><dd>{work.date}</dd></div><div><dt>Price</dt><dd>{work.price||'—'}</dd></div><div><dt>Availability</dt><dd>{work.availability}</dd></div></dl>
+        <button className="primary-button" onClick={download}>Download image</button>
+      </div>
+    </article>
+  </main>
 }
