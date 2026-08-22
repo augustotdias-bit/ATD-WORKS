@@ -11,29 +11,36 @@ export default function Admin(){
   const [works,setWorks]=useState([]);
   const [message,setMessage]=useState('');
   const [saving,setSaving]=useState(false);
+  const [password,setPassword]=useState('');
 
   async function refresh(){setWorks(await getWorks())}
-  useEffect(()=>{refresh()},[]);
+  useEffect(()=>{setPassword(sessionStorage.getItem('atd-admin-password')||'');refresh()},[]);
   useEffect(()=>{if(!file){setPreview(null);return} const url=URL.createObjectURL(file);setPreview(url);return()=>URL.revokeObjectURL(url)},[file]);
+
+  function rememberPassword(value){setPassword(value);sessionStorage.setItem('atd-admin-password',value)}
 
   async function submit(e){
     e.preventDefault();
     if(!file){setMessage('Choose an artwork image first.');return}
     setSaving(true);setMessage('');
     try{
-      await saveWork({...form,id:makeId(),image:file,originalName:file.name,mime:file.type,createdAt:Date.now()});
+      await saveWork({...form,id:makeId(),image:file,originalName:file.name,mime:file.type,createdAt:Date.now()},password);
       setForm(emptyForm);setFile(null);setMessage('Artwork added to the archive.');await refresh();
-    }catch(err){setMessage('Could not save this artwork in the browser.');}
+    }catch(err){setMessage(err.message==='Unauthorized'?'Incorrect admin password.':'Could not save this artwork. If cloud storage is not configured yet, it will remain local to this browser.');}
     finally{setSaving(false)}
   }
 
-  async function remove(id){if(!confirm('Remove this artwork from the archive?'))return;await deleteWork(id);await refresh()}
+  async function remove(id){
+    if(!confirm('Remove this artwork from the archive?'))return;
+    try{await deleteWork(id,password);await refresh();setMessage('Artwork removed.')}catch(err){setMessage(err.message==='Unauthorized'?'Incorrect admin password.':'Could not delete this artwork.')}
+  }
 
   return <main className="site admin-page">
     <header className="header"><a className="brand" href="/">ATD WORKS</a><nav className="nav"><a href="/">Archive</a></nav></header>
     <section className="admin-shell">
-      <div className="admin-intro"><p className="eyebrow">Archive administration</p><h1>Add<br/>work</h1><p>Upload the artwork image and enter its catalogue information. The image can later be downloaded from the artwork page.</p></div>
+      <div className="admin-intro"><p className="eyebrow">Archive administration</p><h1>Add<br/>work</h1><p>Upload the artwork image and enter its catalogue information. When cloud storage is enabled, the archive is shared across all your devices.</p></div>
       <form className="work-form" onSubmit={submit}>
+        <label><span>Admin password</span><input type="password" autoComplete="current-password" placeholder="Required for cloud changes" value={password} onChange={e=>rememberPassword(e.target.value)}/></label>
         <label className="upload-box">{preview?<img src={preview} alt="Artwork preview"/>:<><strong>Artwork image</strong><span>Click to choose JPG, PNG, WEBP or another browser-supported image.</span></>}<input required type="file" accept="image/*" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
         <label><span>Title</span><input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label>
         <label><span>Medium</span><input required placeholder="e.g. Acrylic on canvas" value={form.medium} onChange={e=>setForm({...form,medium:e.target.value})}/></label>
