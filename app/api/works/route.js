@@ -6,7 +6,7 @@ function configured(){return Boolean(process.env.BLOB_STORE_ID||process.env.BLOB
 function authorized(request){const expected=process.env.ATD_ADMIN_PASSWORD;return Boolean(expected)&&request.headers.get('x-admin-password')===expected}
 function normalizeWorks(works){
   const sorted=[...works].sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.createdAt||0)-(a.createdAt||0));
-  return sorted.map((w,i)=>({...w,order:Number.isFinite(Number(w.order))?Number(w.order):i,hidden:Boolean(w.hidden)}))
+  return sorted.map((w,i)=>({...w,price:String(w.price||''),order:Number.isFinite(Number(w.order))?Number(w.order):i,hidden:Boolean(w.hidden)}))
     .sort((a,b)=>a.order-b.order || (b.createdAt||0)-(a.createdAt||0));
 }
 function exposeWork(work){return work.imagePath?{...work,imageUrl:`/api/blob?pathname=${encodeURIComponent(work.imagePath)}`}:work}
@@ -54,7 +54,7 @@ export async function POST(request){
     const safe=(image.name||'artwork').replace(/[^a-zA-Z0-9._-]+/g,'-');
     const blob=await put(`artworks/${id}-${safe}`,image,{access:'private',addRandomSuffix:false});
     const maxOrder=works.reduce((m,w)=>Math.max(m,Number(w.order)||0),-1);
-    const work={id,title:String(data.get('title')||''),medium:String(data.get('medium')||''),dimensions:String(data.get('dimensions')||''),date:String(data.get('date')||''),availability:String(data.get('availability')||'Available'),imagePath:blob.pathname,originalName:image.name||`${id}.jpg`,mime:image.type||'application/octet-stream',createdAt:Number(data.get('createdAt')||Date.now()),order:maxOrder+1,hidden:false};
+    const work={id,title:String(data.get('title')||''),medium:String(data.get('medium')||''),dimensions:String(data.get('dimensions')||''),date:String(data.get('date')||''),price:String(data.get('price')||''),availability:String(data.get('availability')||'Available'),imagePath:blob.pathname,originalName:image.name||`${id}.jpg`,mime:image.type||'application/octet-stream',createdAt:Number(data.get('createdAt')||Date.now()),order:maxOrder+1,hidden:false};
     await writeWorks([work,...works.filter(w=>w.id!==id)]);
     return Response.json(exposeWork(work),{status:201});
   }catch(error){console.error(error);return Response.json({error:'Could not save artwork'},{status:500})}
@@ -70,7 +70,7 @@ export async function PATCH(request){
     const works=await readWorks();
     const index=works.findIndex(w=>w.id===id);
     if(index<0)return Response.json({error:'Artwork not found'},{status:404});
-    const allowed=['title','medium','dimensions','date','availability','hidden','order'];
+    const allowed=['title','medium','dimensions','date','price','availability','hidden','order'];
     const changes={};
     for(const key of allowed)if(Object.prototype.hasOwnProperty.call(body.changes||{},key))changes[key]=body.changes[key];
     works[index]={...works[index],...changes};
