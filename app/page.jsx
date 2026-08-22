@@ -1,2 +1,57 @@
-const works=[];
-export default function Home(){return <main className="site"><header className="header"><a className="brand" href="/">ATD WORKS</a><nav className="nav"><a href="#archive">Archive</a><a href="#about">About</a></nav></header><section className="hero"><h1>ATD WORKS</h1><p>An evolving archive of artworks by Augusto Tavares Dias. A visual record of paintings, objects and works on paper, with each work documented by title, medium, dimensions, date and availability.</p></section><section id="archive"><div className="toolbar"><span>Archive</span><span>{works.length} works</span></div>{works.length?<div className="grid">{works.map(w=><article className="card" key={w.id}><div className="placeholder">ARTWORK IMAGE</div><div className="meta"><h2>{w.title}</h2><p>{w.medium}<br/>{w.dimensions} · {w.date}<br/>{w.availability}</p></div></article>)}</div>:<div className="empty">The archive is ready for its first works.</div>}</section><section id="about" className="hero"><h2>About the archive</h2><p>ATD WORKS is a living catalogue designed to preserve and document the work rather than simply display it.</p></section></main>}
+'use client';
+import {useEffect,useMemo,useState} from 'react';
+import {getWorks} from '../lib/archive';
+
+export default function Home(){
+  const [works,setWorks]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [filter,setFilter]=useState('All');
+
+  useEffect(()=>{
+    let urls=[];
+    getWorks().then(items=>{
+      const withUrls=items.map(work=>{
+        const imageUrl=work.image instanceof Blob?URL.createObjectURL(work.image):null;
+        if(imageUrl) urls.push(imageUrl);
+        return {...work,imageUrl};
+      });
+      setWorks(withUrls);
+    }).finally(()=>setLoading(false));
+    return ()=>urls.forEach(URL.revokeObjectURL);
+  },[]);
+
+  const shown=useMemo(()=>filter==='All'?works:works.filter(w=>w.availability===filter),[works,filter]);
+
+  return <main className="site">
+    <header className="header">
+      <a className="brand" href="/">ATD WORKS</a>
+      <nav className="nav"><a href="#archive">Archive</a><a href="#about">About</a><a href="/admin">Add work</a></nav>
+    </header>
+
+    <section className="hero">
+      <p className="eyebrow">Personal artwork archive</p>
+      <h1>ATD<br/>WORKS</h1>
+      <p>An evolving catalogue of artworks. Each work is documented with its title, medium, dimensions, date and availability, with the original uploaded image kept available for download.</p>
+    </section>
+
+    <section id="archive">
+      <div className="toolbar">
+        <span>Archive · {works.length} {works.length===1?'work':'works'}</span>
+        <div className="filters">{['All','Available','Sold','Not for sale'].map(v=><button key={v} className={filter===v?'active':''} onClick={()=>setFilter(v)}>{v}</button>)}</div>
+      </div>
+
+      {loading?<div className="empty">Opening archive…</div>:shown.length?<div className="grid">{shown.map(work=><a className="card" href={`/work/${work.id}`} key={work.id}>
+        <div className="art-image">{work.imageUrl?<img src={work.imageUrl} alt={work.title}/>:<span>No image</span>}</div>
+        <div className="meta"><div className="meta-top"><h2>{work.title}</h2><span className="status">{work.availability}</span></div><p>{work.medium}<br/>{work.dimensions} · {work.date}</p></div>
+      </a>)}</div>:<div className="empty"><p>{works.length?'No works match this filter.':'The archive is ready for its first work.'}</p><a className="text-link" href="/admin">Add an artwork →</a></div>}
+    </section>
+
+    <section id="about" className="about-section">
+      <p className="eyebrow">About</p>
+      <h2>A living catalogue,<br/>not a conventional portfolio.</h2>
+      <p>ATD WORKS is designed as a quiet record of the work: image first, catalogue information second, without unnecessary decoration.</p>
+    </section>
+
+    <footer className="footer"><span>ATD WORKS</span><span>Artwork archive</span></footer>
+  </main>
+}
