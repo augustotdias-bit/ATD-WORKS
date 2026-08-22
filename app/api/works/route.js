@@ -24,8 +24,13 @@ async function writeWorks(works){
 
 export async function GET(request){
   try{
-    const works=await readWorks();
     const url=new URL(request.url);
+    if(url.searchParams.get('verify')==='1'){
+      if(!configured())return Response.json({error:'Cloud storage not configured'},{status:503});
+      if(!authorized(request))return Response.json({error:'Unauthorized'},{status:401});
+      return Response.json({ok:true});
+    }
+    const works=await readWorks();
     const id=url.searchParams.get('id');
     const includeHidden=url.searchParams.get('includeHidden')==='1'&&authorized(request);
     if(id){const work=works.find(w=>w.id===id);return Response.json(work&&(!work.hidden||includeHidden)?exposeWork(work):null)}
