@@ -8,7 +8,10 @@ Personal artwork archive for Augusto Tavares Dias.
 - Artwork archive structure
 - Artwork metadata model: title, medium, dimensions, date, availability
 - Responsive layout
+- Private admin login
+- Edit, hide/show, reorder and delete artwork controls
+- Private Vercel Blob storage support
 
-## Next stage
+## Deployment
 
-Add persistent artwork uploads, protected administration, image storage, downloads, search and filtering, and production deployment.
+Connected to Vercel through GitHub. Commits to `main` trigger automatic deployments.
